@@ -58,6 +58,20 @@ $league-container-width: 70vw;
     background-color: #FFFFFF;
     cursor: pointer;
   }
+  // Separates each day's fixtures, so a round spanning several dates reads
+  // correctly rather than looking like one block of matches.
+  tr.matchDate {
+    height: 3rem;
+    background-color: #D7DDE3;
+    cursor: default;
+
+    td {
+      font-size: medium;
+      font-weight: 600;
+      color: #3C444C;
+      text-align: $center;
+    }
+  }
 }
 
 .leagueNameContainer {
@@ -99,6 +113,7 @@ $league-container-width: 70vw;
 .noGames {
   text-align: $center;
 }
+
 
 .state {
   min-width: 50px;
