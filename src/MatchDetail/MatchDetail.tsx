@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import Dialog from '@material-ui/core/Dialog';
-import SportsSoccerIcon from '@material-ui/icons/SportsSoccer';
+import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import "./MatchDetail.scss";
 import { MatchDetails, initialMatchDetails } from '../types';
 import { fetchMatchDetails } from '../api/espn';
+import FootballIcon from './FootballIcon';
 
 function MatchDetail(props: any) {
 
@@ -18,8 +17,30 @@ function MatchDetail(props: any) {
 
     const [matchDetails, setMatchDetails] = useState<MatchDetails>(initialMatchDetails);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
+    const dialogRef = useRef<HTMLDialogElement>(null);
 
     const { leagueID, eventID } = props.dialogState;
+
+    // showModal is what earns the focus trap, the Escape key and the backdrop,
+    // so the dialog is opened imperatively rather than by rendering it away.
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+
+        if (props.dialogOpen && !dialog.open) {
+            dialog.showModal();
+        } else if (!props.dialogOpen && dialog.open) {
+            dialog.close();
+        }
+    }, [props.dialogOpen]);
+
+    // A click landing on the dialog itself is a click on the backdrop; anything
+    // inside the match card stops at a child.
+    const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
+        if (event.target === dialogRef.current) {
+            props.handleMatchDetailDialogClose();
+        }
+    };
 
     useEffect(() => {
         if (props.dialogOpen) {
@@ -48,7 +69,12 @@ function MatchDetail(props: any) {
     
     return (
         <>
-            {<Dialog open={props.dialogOpen} onClose={props.handleMatchDetailDialogClose} fullWidth maxWidth="md">
+            {<dialog
+                ref={dialogRef}
+                className="matchDetail__dialog"
+                onClose={props.handleMatchDetailDialogClose}
+                onClick={handleBackdropClick}
+            >
                 <div className="matchDetail">
                   <div className="matchDetail__stats">
                         <div className="matchDetail__stats__homeTeam">
@@ -87,16 +113,16 @@ function MatchDetail(props: any) {
                     {isDataLoaded === true && <>
                         <div className="matchDetail__scorers">
                             <div className="matchDetail__scorers__home">
-                                {matchDetails.home.goals && matchDetails.home.goals.map((item: any, index: any) => 
-                                    <span>{item.scorer} &nbsp;&nbsp;&nbsp; {item.time}' &nbsp;</span>
+                                {matchDetails.home.goals && matchDetails.home.goals.map((item: any) => 
+                                    <span key={`${item.scorer}-${item.time}`}>{item.scorer} &nbsp;&nbsp;&nbsp; {item.time}' &nbsp;</span>
                                 )}
                             </div>
                             <div className="matchDetail__scorers__logo">
-                                <SportsSoccerIcon />
+                                <FootballIcon />
                             </div>
                             <div className="matchDetail__scorers__away">
-                                {matchDetails.away.goals && matchDetails.away.goals.map((item: any, index: any) => 
-                                    <span>&nbsp; {item.scorer} &nbsp;&nbsp;&nbsp; {item.time}'</span>
+                                {matchDetails.away.goals && matchDetails.away.goals.map((item: any) => 
+                                    <span key={`${item.scorer}-${item.time}`}>&nbsp; {item.scorer} &nbsp;&nbsp;&nbsp; {item.time}'</span>
                                 )}
                             </div>
                         </div>
@@ -145,7 +171,7 @@ function MatchDetail(props: any) {
                     </>
             }
                 </div>
-            </Dialog>}
+            </dialog>}
         </>
     );
 }

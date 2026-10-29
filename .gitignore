@@ -8,7 +8,7 @@
 # testing
 /coverage
 
-# production build, copied into docs/ for GitHub Pages
+# production build, published to GitHub Pages by Actions
 /build
 
 # misc

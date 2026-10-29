@@ -27,14 +27,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      # react-scripts 4.0.0-next.98 pins TypeScript 3 against this project's
-      # TypeScript 4, which npm refuses to resolve without this flag.
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
 
       - run: npm run build
-        env:
-          # webpack 4 cannot use the default OpenSSL provider on Node 17+.
-          NODE_OPTIONS: --openssl-legacy-provider
 
       - uses: actions/configure-pages@v5
 

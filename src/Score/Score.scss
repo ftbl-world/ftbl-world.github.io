@@ -88,6 +88,24 @@ $league-container-width: 70vw;
 
 #leagueSelect {
   font-family: 'Poppins';
+  font-size: 1rem;
+  padding: 0.35rem 0.25rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+  border-radius: 0;
+  color: inherit;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-bottom: 2px solid #222831;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #26a380;
+    outline-offset: 2px;
+  }
 }
 
 .liveScore {
@@ -137,14 +155,6 @@ $league-container-width: 70vw;
 
 .awayTeam {
   margin-left: 0.5rem;
-}
-
-.MuiSelect-select:focus {
-  background: none !important;
-}
-
-.MuiInput-underline:after {
-  border-bottom: 2px solid #222831 !important;
 }
 
 @media all and (min-width:0px) and (max-width: 650px) {
