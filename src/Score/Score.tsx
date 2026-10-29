@@ -3,30 +3,15 @@ import MatchDetail from "../MatchDetail/MatchDetail";
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import $ from "jquery";
+import { Competition, LEAGUES, fetchCompetitions } from "../api/espn";
 import "./Score.scss";
 
 function Live() {
-  const [leagues, setLeagues] = useState([]);
+  const [leagues, setLeagues] = useState<Competition[]>([]);
   const [activeLeague, setActiveLeague] = useState('AllLeagues');
   const [isError, setIsError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);	
   const [dialogState, setDialogState] = useState({});
-
-  const updateScore = () => {
-    fetch('https://floating-crag-91660.herokuapp.com/', {
-      mode: 'cors',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-    })
-    .then((res) => res.json())
-    .catch((error) => {
-      setIsError(true);
-    })
-    .then((result) => {
-      setLeagues(result);
-    });
-  };
 
   const updateDate = () => {
     $(document).ready(function() {
@@ -67,12 +52,36 @@ function Live() {
   useEffect(() => {
     var sSelectedLeague: string = localStorage.getItem('ftbl-selected-league') || 'AllLeagues';
     setActiveLeague(sSelectedLeague);
-    updateScore();
-    setInterval(() => {
-      updateScore();
-    }, 15000);
     updateDate();
   }, []);
+
+  useEffect(() => {
+    // Only the leagues currently on screen are polled, so viewing a single
+    // league costs one request per refresh instead of one per competition.
+    const visibleLeagues = activeLeague === 'AllLeagues'
+      ? LEAGUES
+      : LEAGUES.filter((league) => league.leagueID === activeLeague);
+
+    let isStale = false;
+    const updateScore = () => {
+      fetchCompetitions(visibleLeagues)
+        .then((result) => {
+          if (isStale) return;
+          setLeagues(result);
+          setIsError(false);
+        })
+        .catch(() => {
+          if (!isStale) setIsError(true);
+        });
+    };
+
+    updateScore();
+    const refreshInterval = setInterval(updateScore, 15000);
+    return () => {
+      isStale = true;
+      clearInterval(refreshInterval);
+    };
+  }, [activeLeague]);
 
   return (
     <div className="liveContainer">
@@ -89,9 +98,9 @@ function Live() {
             <div className="league__selector">
               <Select id="leagueSelect" value={activeLeague} onChange={(e: any) => handleActiveLeagueChange(e)}>
                 <MenuItem value="AllLeagues">All Leagues</MenuItem>
-                {isError === false && leagues.map((item: any, index: any) => {
+                {LEAGUES.map((league) => {
                   return (
-                    <MenuItem value={item.leagueID} >{item.name}</MenuItem>
+                    <MenuItem key={league.leagueID} value={league.leagueID}>{league.name}</MenuItem>
                   )
                 })}
               </Select>
@@ -99,7 +108,8 @@ function Live() {
           }
           {isError === false && leagues.filter((item: any) => {
             if (activeLeague === "AllLeagues") {
-              return item;
+              // Across every league, only the ones with fixtures are worth a section.
+              return item.matches.length > 0;
             } else {
               return item.leagueID === activeLeague;
             }
