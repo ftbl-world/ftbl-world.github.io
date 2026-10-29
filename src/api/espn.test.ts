@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchCompetitions, fetchMatchDetails } from './espn';
+import { fetchCompetition, fetchMatchDetails } from './espn';
 
-const PREMIER_LEAGUE = [{ leagueID: 'eng.1', name: 'Premier League' }];
+const PREMIER_LEAGUE = { leagueID: 'eng.1', name: 'Premier League' };
 
 const scoreboard = (status: unknown, competitors: unknown[] = []) => ({
   events: [
@@ -29,7 +29,7 @@ describe('match state', () => {
   it('is empty for a scheduled match', async () => {
     respondWith(scoreboard({ type: { state: 'pre' } }));
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].time.state).toBe('');
   });
@@ -39,7 +39,7 @@ describe('match state', () => {
       scoreboard({ type: { state: 'in', name: 'STATUS_FIRST_HALF' }, displayClock: "34'" }),
     );
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].time.state).toBe("34'");
   });
@@ -49,7 +49,7 @@ describe('match state', () => {
       scoreboard({ type: { state: 'in', name: 'STATUS_HALFTIME' }, displayClock: "45'" }),
     );
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].time.state).toBe('HT');
   });
@@ -57,7 +57,7 @@ describe('match state', () => {
   it('is FT once the match is complete', async () => {
     respondWith(scoreboard({ type: { state: 'post', completed: true } }));
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].time.state).toBe('FT');
   });
@@ -69,9 +69,27 @@ describe('match state', () => {
       }),
     );
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].time.state).toBe('Postponed');
+  });
+});
+
+describe('phase', () => {
+  // The polling tiers read this rather than the display string, so an unknown
+  // state must land on 'post' and never keep a league polling forever.
+  it.each([
+    ['pre', 'pre'],
+    ['in', 'in'],
+    ['post', 'post'],
+    [undefined, 'post'],
+    ['something-new', 'post'],
+  ])('maps ESPN state %s to %s', async (state, expected) => {
+    respondWith(scoreboard({ type: { state } }));
+
+    const league = await fetchCompetition(PREMIER_LEAGUE);
+
+    expect(league.matches[0].time.phase).toBe(expected);
   });
 });
 
@@ -84,7 +102,7 @@ describe('competitors', () => {
       ]),
     );
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0]).toMatchObject({
       homeTeam: 'Chelsea',
@@ -104,7 +122,7 @@ describe('competitors', () => {
       ]),
     );
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches[0].homePenaltyScore).toBe('4');
     expect(league.matches[0].awayPenaltyScore).toBe('3');
@@ -113,7 +131,7 @@ describe('competitors', () => {
   it('survives a league with no fixtures', async () => {
     respondWith({});
 
-    const [league] = await fetchCompetitions(PREMIER_LEAGUE);
+    const league = await fetchCompetition(PREMIER_LEAGUE);
 
     expect(league.matches).toEqual([]);
   });
@@ -126,7 +144,7 @@ describe('failures', () => {
       vi.fn().mockResolvedValue({ ok: false, status: 403, json: async () => ({}) }),
     );
 
-    await expect(fetchCompetitions(PREMIER_LEAGUE)).rejects.toThrow('HTTP 403');
+    await expect(fetchCompetition(PREMIER_LEAGUE)).rejects.toThrow('HTTP 403');
   });
 });
 

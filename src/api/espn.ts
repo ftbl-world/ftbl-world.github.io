@@ -7,6 +7,9 @@ export interface League {
   name: string;
 }
 
+/** ESPN's lifecycle for a fixture: not started, under way, finished. */
+export type Phase = 'pre' | 'in' | 'post';
+
 export interface Match {
   matchID: string;
   eventID: string;
@@ -15,6 +18,9 @@ export interface Match {
   time: {
     state: string;
     status: string;
+    // `state` is a display string, so anything deciding how hard to poll reads
+    // this instead.
+    phase: Phase;
   };
 
   homeTeam: string;
@@ -66,19 +72,26 @@ const toState = (status: any): string => {
   }
 };
 
+const toPhase = (status: any): Phase => {
+  const state = status?.type?.state;
+  return state === 'pre' || state === 'in' ? state : 'post';
+};
+
 const toMatch = (leagueID: string, event: any): Match => {
   const competition = event.competitions?.[0] ?? {};
   const competitors: any[] = competition.competitors ?? [];
   const home = competitors.find((c) => c.homeAway === 'home') ?? {};
   const away = competitors.find((c) => c.homeAway === 'away') ?? {};
+  const status = competition.status ?? event.status;
 
   return {
     matchID: event.id,
     eventID: event.id,
     leagueID,
     time: {
-      state: toState(competition.status ?? event.status),
+      state: toState(status),
       status: event.date,
+      phase: toPhase(status),
     },
     homeTeam: home.team?.displayName ?? '',
     awayTeam: away.team?.displayName ?? '',
@@ -91,7 +104,7 @@ const toMatch = (leagueID: string, event: any): Match => {
   };
 };
 
-const fetchCompetition = async (league: League): Promise<Competition> => {
+export const fetchCompetition = async (league: League): Promise<Competition> => {
   const response = await fetch(`${BASE_URL}/${league.leagueID}/scoreboard`);
   if (!response.ok) {
     throw new Error(`Could not load ${league.name} (HTTP ${response.status})`);
@@ -105,9 +118,6 @@ const fetchCompetition = async (league: League): Promise<Competition> => {
     matches: events.map((event) => toMatch(league.leagueID, event)),
   };
 };
-
-export const fetchCompetitions = (leagues: League[]): Promise<Competition[]> =>
-  Promise.all(leagues.map(fetchCompetition));
 
 const statistic = (team: any, name: string): string => {
   const match = (team?.statistics ?? []).find((s: any) => s.name === name);

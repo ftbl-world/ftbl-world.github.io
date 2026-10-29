@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, type MouseEvent } from 'react';
+import { useEffect, useRef, type MouseEvent } from 'react';
 import "./MatchDetail.scss";
-import { MatchDetails, initialMatchDetails } from '../types';
-import { fetchMatchDetails } from '../api/espn';
+import { initialMatchDetails } from '../types';
+import { useMatchDetails } from '../api/queries';
 import FootballIcon from './FootballIcon';
 
 function MatchDetail(props: any) {
@@ -15,11 +15,15 @@ function MatchDetail(props: any) {
     return `${100 * (h / (h + a))}%`;
   };
 
-    const [matchDetails, setMatchDetails] = useState<MatchDetails>(initialMatchDetails);
-    const [isDataLoaded, setIsDataLoaded] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
 
-    const { leagueID, eventID } = props.dialogState;
+    const { leagueID, eventID, time } = props.dialogState;
+
+    // Keeping the last successful payload is the point: a failed refresh used
+    // to blank statistics that were already on screen.
+    const { data } = useMatchDetails(leagueID, eventID, time?.phase, props.dialogOpen);
+    const matchDetails = data ?? initialMatchDetails;
+    const isDataLoaded = Boolean(data);
 
     // showModal is what earns the focus trap, the Escape key and the backdrop,
     // so the dialog is opened imperatively rather than by rendering it away.
@@ -42,31 +46,6 @@ function MatchDetail(props: any) {
         }
     };
 
-    useEffect(() => {
-        if (props.dialogOpen) {
-            let isStale = false;
-            const updateMatchDetails = () => {
-                fetchMatchDetails(leagueID, eventID)
-                    .then((result) => {
-                        if (isStale) return;
-                        setMatchDetails(result);
-                        setIsDataLoaded(true);
-                    })
-                    .catch(() => {
-                        if (!isStale) setIsDataLoaded(false);
-                    });
-            };
-
-            updateMatchDetails();
-            const refreshInterval = setInterval(updateMatchDetails, 15000);
-            return () => {
-                isStale = true;
-                setIsDataLoaded(false);
-                return clearInterval(refreshInterval);
-            };
-        }
-    }, [props.dialogOpen, leagueID, eventID]);
-    
     return (
         <>
             {<dialog
