@@ -19,10 +19,10 @@ function MatchDetail(props: any) {
     const [matchDetails, setMatchDetails] = useState<MatchDetails>(initialMatchDetails);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+    const { leagueID, eventID } = props.dialogState;
+
     useEffect(() => {
         if (props.dialogOpen) {
-            const { leagueID, eventID } = props.dialogState;
-
             let isStale = false;
             const updateMatchDetails = () => {
                 fetchMatchDetails(leagueID, eventID)
@@ -44,7 +44,7 @@ function MatchDetail(props: any) {
                 return clearInterval(refreshInterval);
             };
         }
-    }, [props.dialogOpen, props.dialogState.leagueID, props.dialogState.eventID]);
+    }, [props.dialogOpen, leagueID, eventID]);
     
     return (
         <>

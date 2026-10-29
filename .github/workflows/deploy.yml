@@ -35,9 +35,6 @@ jobs:
         env:
           # webpack 4 cannot use the default OpenSSL provider on Node 17+.
           NODE_OPTIONS: --openssl-legacy-provider
-          # create-react-app turns lint warnings into build failures when CI is
-          # set, which Actions does by default. Real compile errors still fail.
-          CI: false
 
       - uses: actions/configure-pages@v5
 
