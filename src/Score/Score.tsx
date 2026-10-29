@@ -1,33 +1,18 @@
 import React, { useState, useEffect } from "react";
 import MatchDetail from "../MatchDetail/MatchDetail";
-import MenuItem from '@material-ui/core/MenuItem';
-import Select from '@material-ui/core/Select';
-import $ from "jquery";
 import { Competition, LEAGUES, Match, fetchCompetitions } from "../api/espn";
 import "./Score.scss";
 
 function Live() {
   const [leagues, setLeagues] = useState<Competition[]>([]);
-  const [activeLeague, setActiveLeague] = useState('AllLeagues');
+  // Read on first render rather than in an effect. Setting it afterwards made
+  // the page fetch every league once, then immediately refetch the stored one.
+  const [activeLeague, setActiveLeague] = useState(
+    () => localStorage.getItem('ftbl-selected-league') || 'AllLeagues'
+  );
   const [isError, setIsError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);	
   const [dialogState, setDialogState] = useState({});
-
-  const updateDate = () => {
-    $(document).ready(function() {
-      let date = new Date();
-  
-      let day: any = date.getDate();
-      let month: any = date.getMonth() + 1;
-      let year = date.getFullYear();
-  
-      if (month < 10) month = "0" + month;
-      if (day < 10) day = "0" + day;
-  
-      let today = year + "-" + month + "-" + day;       
-      $("#datepicker").attr("value", today);
-    });
-  };
 
   const handleActiveLeagueChange = (e: any) => {
     setActiveLeague(e.target.value);
@@ -85,15 +70,9 @@ function Live() {
     setDialogOpen(true);	
     setDialogState(match)	
   };	
-  const handleMatchDetailDialogClose = (match: any) => {	
+  const handleMatchDetailDialogClose = () => {	
     setDialogOpen(false);	
   };
-
-  useEffect(() => {
-    var sSelectedLeague: string = localStorage.getItem('ftbl-selected-league') || 'AllLeagues';
-    setActiveLeague(sSelectedLeague);
-    updateDate();
-  }, []);
 
   useEffect(() => {
     // Only the leagues currently on screen are polled, so viewing a single
@@ -136,14 +115,15 @@ function Live() {
           {isError === true && <div className="errorPage"><span>Cannot fetch the data right now.</span></div>}
           {isError === false &&
             <div className="league__selector">
-              <Select id="leagueSelect" value={activeLeague} onChange={(e: any) => handleActiveLeagueChange(e)}>
-                <MenuItem value="AllLeagues">All Leagues</MenuItem>
+              <label className="sr-only" htmlFor="leagueSelect">Competition</label>
+              <select id="leagueSelect" value={activeLeague} onChange={(e: any) => handleActiveLeagueChange(e)}>
+                <option value="AllLeagues">All Leagues</option>
                 {LEAGUES.map((league) => {
                   return (
-                    <MenuItem key={league.leagueID} value={league.leagueID}>{league.name}</MenuItem>
+                    <option key={league.leagueID} value={league.leagueID}>{league.name}</option>
                   )
                 })}
-              </Select>
+              </select>
             </div>
           }
           {isError === false && leagues.filter((item: any) => {
@@ -153,7 +133,7 @@ function Live() {
             } else {
               return item.leagueID === activeLeague;
             }
-          }).map((item: any, index: any) => {
+          }).map((item: any) => {
             return (
               <div id={item.leagueID} key={item.leagueID} className="liveContainer__body__leagueContainer">
                 <div className="leagueNameContainer"><span className="leagueName">{item.name}</span></div>
