@@ -3,6 +3,7 @@ import Dialog from '@material-ui/core/Dialog';
 import SportsSoccerIcon from '@material-ui/icons/SportsSoccer';
 import "./MatchDetail.scss";
 import { MatchDetails, initialMatchDetails } from '../types';
+import { fetchMatchDetails } from '../api/espn';
 
 function MatchDetail(props: any) {
 
@@ -18,35 +19,32 @@ function MatchDetail(props: any) {
     const [matchDetails, setMatchDetails] = useState<MatchDetails>(initialMatchDetails);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    const fetchMatchDetails = () => {
-        fetch(`https://floating-crag-91660.herokuapp.com/details?matchUrl=${encodeURIComponent(props.dialogState.detailsUrl)}`, {
-            mode: 'cors',
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-            },
-        })
-        .then((res) => res.json())
-        .catch((error) => {
-            setIsDataLoaded(false);
-        })
-        .then((result) => {
-            setIsDataLoaded(true);
-            setMatchDetails(result);
-        });
-    }
-
     useEffect(() => {
         if (props.dialogOpen) {
-            fetchMatchDetails();
-            const refreshInterval = setInterval(() => {
-                fetchMatchDetails();
-            }, 15000);
+            const { leagueID, eventID } = props.dialogState;
+
+            let isStale = false;
+            const updateMatchDetails = () => {
+                fetchMatchDetails(leagueID, eventID)
+                    .then((result) => {
+                        if (isStale) return;
+                        setMatchDetails(result);
+                        setIsDataLoaded(true);
+                    })
+                    .catch(() => {
+                        if (!isStale) setIsDataLoaded(false);
+                    });
+            };
+
+            updateMatchDetails();
+            const refreshInterval = setInterval(updateMatchDetails, 15000);
             return () => {
+                isStale = true;
                 setIsDataLoaded(false);
                 return clearInterval(refreshInterval);
             };
         }
-    }, [props.dialogOpen, props.dialogState.detailsUrl]);
+    }, [props.dialogOpen, props.dialogState.leagueID, props.dialogState.eventID]);
     
     return (
         <>
@@ -102,16 +100,17 @@ function MatchDetail(props: any) {
                                 )}
                             </div>
                         </div>
-                    <div className="matchDetail__charts">
-                      {matchDetails.charts.possessionChart && <>
-                        <div className="matchDetail__charts__possession">
-                          <span className="chart-title">Possession</span>
-                          <div className="matchDetail__charts__possession__chart">
-                            <span className="datapoint-label">{matchDetails.home.possession}</span>
-                            <div className="matchDetail__charts__possession__chart__svg-container" dangerouslySetInnerHTML={{__html: matchDetails.charts.possessionChart}}></div>
-                            <span className="datapoint-label">{matchDetails.away.possession}</span>
-                          </div>
+                    {matchDetails.home.possession && <div className="matchDetail__charts">
+                      <div className="matchDetail__charts__possession">
+                        <span className="chart-title">Possession</span>
+                        <div className="matchDetail__charts__datapoints">
+                          <span className="datapoint-label">{matchDetails.home.possession}</span>
+                          <span className="datapoint-label">{matchDetails.away.possession}</span>
                         </div>
+                        <div className="background-bar">
+                          <div className="foreground-bar" style={{ width: getPercentage(matchDetails.home.possession, matchDetails.away.possession) }}></div>
+                        </div>
+                      </div>
                       <div className="matchDetail__charts__ontarget">
                       <span className="chart-title">Shots On Target</span>
                         <div className="matchDetail__charts__datapoints">
@@ -142,8 +141,7 @@ function MatchDetail(props: any) {
                           <div className="foreground-bar" style={{ width: getPercentage(matchDetails.home.totalPasses, matchDetails.away.totalPasses) }}></div>
                         </div>
                       </div>
-                    </> }
-                    </div>
+                    </div>}
                     </>
             }
                 </div>

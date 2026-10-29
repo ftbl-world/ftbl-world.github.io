@@ -17,7 +17,6 @@ export interface TeamDetails {
 export interface MatchDetails {
   home: TeamDetails;
   away: TeamDetails;
-  charts: { possessionChart: string };
 }
 
 export const initialMatchDetails: MatchDetails = {
@@ -39,5 +38,4 @@ export const initialMatchDetails: MatchDetails = {
     },
     totalPasses: '',
   },
-  charts: { possessionChart: '' },
 };

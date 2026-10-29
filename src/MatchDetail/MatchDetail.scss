@@ -138,34 +138,6 @@ $secondary-color: rgba(0, 0, 0, 0.8);
       width: 100%;
     }
 
-    &__possession {
-      svg {
-        margin: auto;
-      }
-      .back {
-        fill: $primary-color;
-      }
-      .wedge-blank {
-        fill: white;
-      }
-      .wedge {
-        fill: $secondary-color;
-      }
-      .cutout {
-        fill: white;
-      }
-
-      &__chart {
-        display: $flex;
-        align-items: $center;
-
-        &__svg-container {
-          display: $flex;
-          margin: 0 24px;
-        }
-
-      }
-    }
   }
 }
 
