@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MatchDetail from "../MatchDetail/MatchDetail";
-import { Competition, LEAGUES, Match, fetchCompetitions } from "../api/espn";
+import { LEAGUES, Match } from "../api/espn";
+import { useCompetitions } from "../api/queries";
 import "./Score.scss";
 
 function Live() {
-  const [leagues, setLeagues] = useState<Competition[]>([]);
   // Read on first render rather than in an effect. Setting it afterwards made
   // the page fetch every league once, then immediately refetch the stored one.
   const [activeLeague, setActiveLeague] = useState(
     () => localStorage.getItem('ftbl-selected-league') || 'AllLeagues'
   );
-  const [isError, setIsError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);	
   const [dialogState, setDialogState] = useState({});
 
@@ -74,33 +73,25 @@ function Live() {
     setDialogOpen(false);	
   };
 
-  useEffect(() => {
-    // Only the leagues currently on screen are polled, so viewing a single
-    // league costs one request per refresh instead of one per competition.
-    const visibleLeagues = activeLeague === 'AllLeagues'
-      ? LEAGUES
-      : LEAGUES.filter((league) => league.leagueID === activeLeague);
+  // Only the leagues currently on screen are polled, so viewing a single
+  // league costs one request per refresh instead of one per competition.
+  const visibleLeagues = activeLeague === 'AllLeagues'
+    ? LEAGUES
+    : LEAGUES.filter((league) => league.leagueID === activeLeague);
 
-    let isStale = false;
-    const updateScore = () => {
-      fetchCompetitions(visibleLeagues)
-        .then((result) => {
-          if (isStale) return;
-          setLeagues(result);
-          setIsError(false);
-        })
-        .catch(() => {
-          if (!isStale) setIsError(true);
-        });
-    };
+  const results = useCompetitions(visibleLeagues);
 
-    updateScore();
-    const refreshInterval = setInterval(updateScore, 15000);
-    return () => {
-      isStale = true;
-      clearInterval(refreshInterval);
-    };
-  }, [activeLeague]);
+  // A whole-page error is now reserved for losing every league at once. One
+  // competition failing degrades its own section and leaves the rest readable.
+  const isError = results.length > 0 && results.every((result) => result.isError);
+
+  // Across every league, only the ones with fixtures are worth a section, but a
+  // failed or explicitly selected league still needs somewhere to say so.
+  const sections = results.filter((result) =>
+    activeLeague !== 'AllLeagues' ||
+    result.isError ||
+    (result.competition?.matches.length ?? 0) > 0
+  );
 
   return (
     <div className="liveContainer">
@@ -126,20 +117,14 @@ function Live() {
               </select>
             </div>
           }
-          {isError === false && leagues.filter((item: any) => {
-            if (activeLeague === "AllLeagues") {
-              // Across every league, only the ones with fixtures are worth a section.
-              return item.matches.length > 0;
-            } else {
-              return item.leagueID === activeLeague;
-            }
-          }).map((item: any) => {
+          {isError === false && sections.map(({ league, competition, isError: sectionFailed }) => {
             return (
-              <div id={item.leagueID} key={item.leagueID} className="liveContainer__body__leagueContainer">
-                <div className="leagueNameContainer"><span className="leagueName">{item.name}</span></div>
+              <div id={league.leagueID} key={league.leagueID} className="liveContainer__body__leagueContainer">
+                <div className="leagueNameContainer"><span className="leagueName">{league.name}</span></div>
                 <table>
                   <tbody>
-                    {groupByDate(item.matches).map((group) => {
+                    {sectionFailed && <tr><td><div className="noGames"><span><b>Scores unavailable right now.</b></span></div></td></tr>}
+                    {groupByDate(competition?.matches ?? []).map((group) => {
                       return (
                         <React.Fragment key={group.day}>
                         <tr className="matchDate">
@@ -178,7 +163,7 @@ function Live() {
                         </React.Fragment>
                       );
                     })}
-                    {item.matches.length === 0 && <tr><td><div className="noGames"><span><b>No matches scheduled.</b></span></div></td></tr>}
+                    {!sectionFailed && competition?.matches.length === 0 && <tr><td><div className="noGames"><span><b>No matches scheduled.</b></span></div></td></tr>}
                   </tbody>
                 </table>
               </div>
