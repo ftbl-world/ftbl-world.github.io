@@ -3,7 +3,7 @@ import MatchDetail from "../MatchDetail/MatchDetail";
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import $ from "jquery";
-import { Competition, LEAGUES, fetchCompetitions } from "../api/espn";
+import { Competition, LEAGUES, Match, fetchCompetitions } from "../api/espn";
 import "./Score.scss";
 
 function Live() {
@@ -40,6 +40,46 @@ function Live() {
     const minutes = ('0' + date.getMinutes()).slice(-2);
     return `${hours}:${minutes}`;
   }
+
+  // Kickoffs are grouped and labelled in local time, matching convertTime. A
+  // round can straddle midnight UTC while still being one evening locally.
+  const startOfDay = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const describeDate = (timeString: string) => {
+    const date = new Date(timeString);
+    const today = startOfDay(new Date());
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+    switch (startOfDay(date).getTime()) {
+      case today.getTime():
+        return 'Today';
+      case tomorrow.getTime():
+        return 'Tomorrow';
+      default:
+        return date.toLocaleDateString(undefined, {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+        });
+    }
+  };
+
+  const groupByDate = (matches: Match[]) => {
+    const groups: { day: number; label: string; matches: Match[] }[] = [];
+
+    matches.forEach((match) => {
+      const day = startOfDay(new Date(match.time.status)).getTime();
+      const group = groups.find((candidate) => candidate.day === day);
+      if (group) {
+        group.matches.push(match);
+      } else {
+        groups.push({ day, label: describeDate(match.time.status), matches: [match] });
+      }
+    });
+
+    return groups;
+  };
 
   const handleTableRowClick = (match: any) => {	
     setDialogOpen(true);	
@@ -119,7 +159,13 @@ function Live() {
                 <div className="leagueNameContainer"><span className="leagueName">{item.name}</span></div>
                 <table>
                   <tbody>
-                    {item.matches.length > 0 && item.matches.map((match: any) => {
+                    {groupByDate(item.matches).map((group) => {
+                      return (
+                        <React.Fragment key={group.day}>
+                        <tr className="matchDate">
+                          <td colSpan={3}><span>{group.label}</span></td>
+                        </tr>
+                        {group.matches.map((match: any) => {
                       return (
                         <tr key={match.matchID} onClick={() => handleTableRowClick(match)}>
                           <td className="liveScore__homeTeam">
@@ -148,8 +194,11 @@ function Live() {
                           </td>
                         </tr>
                       );
+                        })}
+                        </React.Fragment>
+                      );
                     })}
-                    {item.matches.length === 0 && <tr><td><div className="noGames"><span><b>No scheduled matches today.</b></span></div></td></tr>}
+                    {item.matches.length === 0 && <tr><td><div className="noGames"><span><b>No matches scheduled.</b></span></div></td></tr>}
                   </tbody>
                 </table>
               </div>
