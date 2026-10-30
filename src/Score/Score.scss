@@ -1,31 +1,5 @@
 $flex: flex;
 $center: center;
-$league-container-width: 70vw;
-
-.liveContainer__header {
-  background-color: #26a380;
-}
-
-.liveContainer__header__content {
-  display: $flex;
-  margin-left: 2rem;
-  flex-direction: row;
-  align-items: $center;
-}
-
-.live__dot {
-  height: 12px;
-  width: 12px;
-  background-color: red;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.live__title {
-  margin: 0.5rem;
-  font-size: x-large;
-  font-weight: 500;
-}
 
 .liveContainer__body {
   display: $flex;
@@ -38,15 +12,36 @@ $league-container-width: 70vw;
   display: $flex;
   flex-direction: column;
   align-items: $center;
+  width: var(--content-width);
+  padding: 0 var(--content-gutter);
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-.league__selector {
-  margin-top: 1rem;
+.liveContainer__controls {
+  display: $flex;
+  flex-direction: column;
+  align-items: $center;
+  width: 100%;
+  min-width: 0;
+}
+
+.liveContainer__timezone {
+  font-size: 0.75rem;
+  color: #5a636c;
+  margin-bottom: 0.5rem;
+}
+
+.emptyBoard {
+  margin-top: 3rem;
+  text-align: $center;
+  color: #5a636c;
 }
 
 .liveContainer__body__leagueContainer {
-  width: $league-container-width;
-  margin: 2rem;
+  width: 100%;
+  min-width: 0;
+  margin: 2rem 0;
   table {
     table-layout: fixed;
     border-collapse: separate;
@@ -58,8 +53,6 @@ $league-container-width: 70vw;
     background-color: #FFFFFF;
     cursor: pointer;
   }
-  // Separates each day's fixtures, so a round spanning several dates reads
-  // correctly rather than looking like one block of matches.
   tr.matchDate {
     height: 3rem;
     background-color: #D7DDE3;
@@ -84,28 +77,6 @@ $league-container-width: 70vw;
 
 .leagueName {
   line-height: 3rem;
-}
-
-#leagueSelect {
-  font-family: 'Poppins';
-  font-size: 1rem;
-  padding: 0.35rem 0.25rem;
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.42);
-  border-radius: 0;
-  color: inherit;
-  cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-bottom: 2px solid #222831;
-  }
-
-  &:focus-visible {
-    outline: 2px solid #26a380;
-    outline-offset: 2px;
-  }
 }
 
 .liveScore {
@@ -158,14 +129,6 @@ $league-container-width: 70vw;
 }
 
 @media all and (min-width:0px) and (max-width: 650px) {
-  .headerContainer {
-    height: 3rem;
-  }
-
-  .header__title h2 {
-    font-size: x-large;
-  }
-
   table {
     font-size: small;
   }
@@ -182,10 +145,6 @@ $league-container-width: 70vw;
     width: 42.5%;
   }
 
-  .live__title{
-    font-size: inherit;
-  }
-
   .leagueNameContainer {
     font-size: inherit;
   }
@@ -195,7 +154,6 @@ $league-container-width: 70vw;
   }
 
   .liveContainer__body__leagueContainer {
-    min-width: 90vw;
-    margin: 1rem;
+    margin: 1rem 0;
   }
 }

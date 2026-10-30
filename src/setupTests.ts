@@ -1,9 +1,23 @@
-// Registers the jest-dom matchers (toBeInTheDocument, toHaveValue, ...) on
-// Vitest's expect, along with their types.
 import '@testing-library/jest-dom/vitest';
 
-// jsdom ships <dialog> but not showModal/close, so MatchDetail would throw on
-// open. Every browser the app targets implements these natively.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (media: string) =>
+    ({
+      media,
+      matches: false,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+}
+
 if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
     this.open = true;

@@ -14,7 +14,12 @@ const POLL_SETTLED = 30 * 60_000;
 // visibly lag the first whistle.
 const KICKOFF_SOON_MS = 10 * 60_000;
 
-const pollInterval = (competition: Competition | undefined): number => {
+const pollInterval = (
+  competition: Competition | undefined,
+  isHistory: boolean
+): number | false => {
+  // A day that has already been and gone cannot change.
+  if (isHistory) return false;
   if (!competition) return POLL_LIVE;
 
   const now = Date.now();
@@ -31,15 +36,18 @@ const pollInterval = (competition: Competition | undefined): number => {
   return POLL_SETTLED;
 };
 
-const cacheKey = (leagueID: string) => `ftbl-scores-${leagueID}`;
+const cacheKey = (leagueID: string, date: string) => `ftbl-scores-${leagueID}-${date}`;
 
 /**
  * Last known scores, so a reload paints something immediately instead of an
  * empty page. Treated as already stale, so a refetch starts right away.
  */
-const readCache = (leagueID: string): { data: Competition; at: number } | undefined => {
+const readCache = (
+  leagueID: string,
+  date: string
+): { data: Competition; at: number } | undefined => {
   try {
-    const raw = localStorage.getItem(cacheKey(leagueID));
+    const raw = localStorage.getItem(cacheKey(leagueID, date));
     if (!raw) return undefined;
     const parsed = JSON.parse(raw);
     if (!parsed?.data?.matches) return undefined;
@@ -50,26 +58,46 @@ const readCache = (leagueID: string): { data: Competition; at: number } | undefi
   }
 };
 
-const writeCache = (leagueID: string, data: Competition) => {
+const writeCache = (leagueID: string, date: string, data: Competition) => {
   try {
-    localStorage.setItem(cacheKey(leagueID), JSON.stringify({ data, at: Date.now() }));
+    localStorage.setItem(
+      cacheKey(leagueID, date),
+      JSON.stringify({ data, at: Date.now() })
+    );
   } catch {
     // Private browsing and full quotas both land here. The app works without it.
   }
 };
 
-const competitionQuery = (league: League) => {
-  const cached = readCache(league.leagueID);
+/**
+ * Browsing a fortnight of fixtures would otherwise leave hundreds of dead keys
+ * behind, so only the requested dates are kept.
+ */
+export const pruneCache = (keepDates: string[]) => {
+  try {
+    const stale = Object.keys(localStorage).filter(
+      (key) =>
+        key.startsWith('ftbl-scores-') &&
+        !keepDates.some((date) => key.endsWith(`-${date}`))
+    );
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Nothing here is load-bearing.
+  }
+};
+
+const competitionQuery = (league: League, date: string, isHistory: boolean) => {
+  const cached = readCache(league.leagueID, date);
 
   return {
-    queryKey: ['competition', league.leagueID] as const,
+    queryKey: ['competition', league.leagueID, date] as const,
     queryFn: async () => {
-      const competition = await fetchCompetition(league);
-      writeCache(league.leagueID, competition);
+      const competition = await fetchCompetition(league, date);
+      writeCache(league.leagueID, date, competition);
       return competition;
     },
     refetchInterval: ({ state }: { state: { data: Competition | undefined } }) =>
-      pollInterval(state.data),
+      pollInterval(state.data, isHistory),
     initialData: cached?.data,
     initialDataUpdatedAt: cached?.at,
   };
@@ -83,9 +111,13 @@ export interface CompetitionResult {
 }
 
 /** One query per league, so a single failing competition cannot blank the page. */
-export const useCompetitions = (leagues: League[]): CompetitionResult[] =>
+export const useCompetitions = (
+  leagues: League[],
+  date: string,
+  isHistory: boolean
+): CompetitionResult[] =>
   useQueries({
-    queries: leagues.map(competitionQuery),
+    queries: leagues.map((league) => competitionQuery(league, date, isHistory)),
     combine: (results) =>
       results.map((result, index) => ({
         league: leagues[index],

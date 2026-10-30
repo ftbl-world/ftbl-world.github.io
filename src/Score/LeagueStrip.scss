@@ -1,0 +1,56 @@
+$accent: #26a380;
+$ink: #222831;
+$muted: #5a636c;
+
+.leagueStrip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.25rem;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &__item {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.9rem;
+    font-family: 'Poppins';
+    font-size: 0.85rem;
+    color: $muted;
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $ink;
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+
+    &--active {
+      color: #ffffff;
+      font-weight: 600;
+      background-color: $ink;
+      border-color: $ink;
+
+      &:hover {
+        color: #ffffff;
+      }
+    }
+
+    &--empty:not(.leagueStrip__item--active) {
+      opacity: 0.45;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 2px;
+    }
+  }
+}

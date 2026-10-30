@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { startOfDay } from '../api/dates';
+import { toDateParam } from '../api/espn';
 import App from './App';
 
 const fixture = (id: string, date: string, home: string, away: string) => ({
@@ -49,13 +51,17 @@ afterEach(() => {
   localStorage.clear();
 });
 
-it('groups fixtures under relative date headings', async () => {
+it('heads only the fixtures that fall outside the selected day', async () => {
   render(<App />);
 
-  expect(await screen.findByText('Chelsea')).toBeInTheDocument();
-  expect(screen.getByText('Fulham')).toBeInTheDocument();
-  expect(screen.getByText('Today')).toBeInTheDocument();
-  expect(screen.getByText('Tomorrow')).toBeInTheDocument();
+  const table = await screen.findByRole('table');
+  expect(within(table).getByText('Chelsea')).toBeInTheDocument();
+  expect(within(table).getByText('Fulham')).toBeInTheDocument();
+
+  // The strip already names the selected day, so repeating it is noise...
+  expect(within(table).queryByText('Today')).not.toBeInTheDocument();
+  // ...but a fixture ESPN returns on the following local day still needs saying.
+  expect(within(table).getByText('Tomorrow')).toBeInTheDocument();
 });
 
 it('shows a kickoff time rather than a scoreline before a match starts', async () => {
@@ -65,13 +71,31 @@ it('shows a kickoff time rather than a scoreline before a match starts', async (
   expect(screen.queryByText('0 - 0')).not.toBeInTheDocument();
 });
 
-it('offers every competition in the selector', async () => {
+it('offers every competition in the strip and marks the active one', async () => {
   render(<App />);
 
-  const select = await screen.findByLabelText('Competition');
-  expect(within(select).getByRole('option', { name: 'All Leagues' })).toBeInTheDocument();
-  expect(within(select).getByRole('option', { name: 'Premier League' })).toBeInTheDocument();
-  expect(select).toHaveValue('eng.1');
+  const strip = await screen.findByRole('tablist', { name: 'Competition' });
+  const tabs = within(strip).getAllByRole('tab');
+
+  expect(tabs.map((tab) => tab.textContent)).toContain('All Leagues');
+  expect(tabs.map((tab) => tab.textContent)).toContain('Premier League');
+  expect(within(strip).getByRole('tab', { name: 'Premier League' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
+it('switches competition when another is picked', async () => {
+  render(<App />);
+
+  const strip = await screen.findByRole('tablist', { name: 'Competition' });
+  fireEvent.click(within(strip).getByRole('tab', { name: 'All Leagues' }));
+
+  expect(within(strip).getByRole('tab', { name: 'All Leagues' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  expect(localStorage.getItem('ftbl-selected-league')).toBe('AllLeagues');
 });
 
 it('shows an error when every league fails', async () => {
@@ -175,6 +199,117 @@ it('keeps match statistics on screen when a refresh fails', async () => {
   expect(screen.getByText('401')).toBeInTheDocument();
 });
 
+it('requests the selected date and nothing else', async () => {
+  const urls: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string) => {
+      urls.push(url);
+      return Promise.resolve(ok(scoreboard));
+    }),
+  );
+
+  render(<App />);
+  await screen.findByText('Chelsea');
+
+  // 2030-05-18 is the pinned "today".
+  expect(urls.every((url) => url.includes('dates=20300518'))).toBe(true);
+
+  urls.length = 0;
+  const strip = await screen.findByRole('tablist', { name: 'Match date' });
+  fireEvent.click(within(strip).getByRole('tab', { name: 'Yesterday' }));
+
+  await vi.waitFor(() => expect(urls.length).toBeGreaterThan(0));
+  expect(urls.every((url) => url.includes('dates=20300517'))).toBe(true);
+});
+
+it('does not poll a date that has already passed', async () => {
+  let polls = 0;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/scoreboard')) polls += 1;
+      return Promise.resolve(ok(scoreboard));
+    }),
+  );
+
+  render(<App />);
+  const strip = await screen.findByRole('tablist', { name: 'Match date' });
+  fireEvent.click(within(strip).getByRole('tab', { name: 'Yesterday' }));
+  await vi.waitFor(() => expect(polls).toBeGreaterThan(0));
+
+  const settled = polls;
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(120_000);
+  });
+
+  expect(polls).toBe(settled);
+});
+
+it('narrows the board to matches in progress', async () => {
+  const mixed = {
+    events: [
+      {
+        id: '10',
+        date: '2030-05-18T14:00:00Z',
+        competitions: [
+          {
+            status: { type: { state: 'in', name: 'STATUS_SECOND_HALF' }, displayClock: "67'" },
+            competitors: [
+              { homeAway: 'home', score: '2', team: { displayName: 'Playing Now', logo: '' } },
+              { homeAway: 'away', score: '1', team: { displayName: 'Also Playing', logo: '' } },
+            ],
+          },
+        ],
+      },
+      {
+        id: '11',
+        date: '2030-05-18T19:00:00Z',
+        competitions: [
+          {
+            status: { type: { state: 'pre' } },
+            competitors: [
+              { homeAway: 'home', score: '0', team: { displayName: 'Later Today', logo: '' } },
+              { homeAway: 'away', score: '0', team: { displayName: 'Kicks Off Later', logo: '' } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok(mixed)));
+
+  render(<App />);
+  expect(await screen.findByText('Later Today')).toBeInTheDocument();
+
+  // The filter advertises how many are in progress before it is used.
+  const live = screen.getByRole('button', { name: /Live/ });
+  expect(live).toHaveTextContent('1');
+
+  fireEvent.click(live);
+
+  expect(screen.getByText('Playing Now')).toBeInTheDocument();
+  expect(screen.queryByText('Later Today')).not.toBeInTheDocument();
+});
+
+it('returns to today when the live filter is switched on', async () => {
+  render(<App />);
+
+  const dates = await screen.findByRole('tablist', { name: 'Match date' });
+  fireEvent.click(within(dates).getByRole('tab', { name: 'Yesterday' }));
+  expect(within(dates).getByRole('tab', { name: 'Yesterday' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: /Live/ }));
+
+  expect(within(dates).getByRole('tab', { name: 'Today' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
 // Counts scoreboard requests for the selected league while time is advanced, so
 // the polling tiers are measured by what they actually cost.
 const countPolls = async (status: unknown, advanceMs: number) => {
@@ -233,7 +368,7 @@ it('stops polling a league whose matches have all finished', async () => {
 
 it('paints cached scores before the network answers', async () => {
   localStorage.setItem(
-    'ftbl-scores-eng.1',
+    `ftbl-scores-eng.1-${toDateParam(startOfDay(new Date()))}`,
     JSON.stringify({
       at: Date.now(),
       data: {

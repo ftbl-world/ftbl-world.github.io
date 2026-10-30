@@ -1,0 +1,132 @@
+$accent: #26a380;
+$ink: #222831;
+$muted: #5a636c;
+
+.dateStrip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 1rem;
+
+  &__days {
+    display: flex;
+    align-items: center;
+    column-gap: 0.25rem;
+    row-gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+    padding-bottom: 0.25rem;
+  }
+
+  &__day {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.85rem;
+    font-family: 'Poppins';
+    font-size: 0.9rem;
+    color: $muted;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $ink;
+    }
+
+    &--active {
+      color: $ink;
+      font-weight: 600;
+      border-bottom-color: $accent;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 2px;
+    }
+  }
+
+  &__picker {
+    flex: 0 0 auto;
+    display: inline-flex;
+    margin-left: 0.25rem;
+
+    input {
+      font-family: 'Poppins';
+      font-size: 0.85rem;
+      color: $muted;
+      padding: 0.3rem 0.4rem;
+      background: none;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid $accent;
+        outline-offset: 1px;
+      }
+    }
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__showing {
+    font-size: 0.85rem;
+    color: $muted;
+  }
+
+  &__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    font-family: 'Poppins';
+    font-size: 0.85rem;
+    color: $muted;
+    background: none;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+    cursor: pointer;
+
+    &__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #c2c8ce;
+    }
+
+    &__count {
+      font-weight: 600;
+    }
+
+    &--active {
+      color: #ffffff;
+      background-color: #c62828;
+      border-color: #c62828;
+
+      .dateStrip__live__dot {
+        background-color: #ffffff;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 2px;
+    }
+  }
+}
+
+@media all and (max-width: 650px) {
+  .dateStrip__day {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}

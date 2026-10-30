@@ -21,15 +21,15 @@ function App() {
               <Header />
           </div>
           )} />
+          {/* Score renders its own header, because the live badge in the bar
+              is driven by the scores it has already fetched. */}
           <Route path="/score" render={() => (
             <div className="App">
-              <Header />
               <Score />
           </div>
           )} />
           <Route path="/" render={() => (
             <div className="App">
-              <Header />
               <Score />
           </div>
           )} />
