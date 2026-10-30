@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useHistory } from "react-router-dom";
 import Header from "../Header/Header";
-import MatchDetail from "../MatchDetail/MatchDetail";
 import { Competition, LEAGUES, Match, toDateParam } from "../api/espn";
 import {
   addDays,
@@ -24,8 +24,7 @@ function Live() {
   // Deliberately not persisted: landing on a stale date would be confusing.
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [liveOnly, setLiveOnly] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);	
-  const [dialogState, setDialogState] = useState({});
+  const history = useHistory();
 
   // Recomputed per render so a tab left open overnight still agrees with the
   // calendar about which day is "Today".
@@ -78,12 +77,8 @@ function Live() {
     return groups;
   };
 
-  const handleTableRowClick = (match: any) => {	
-    setDialogOpen(true);	
-    setDialogState(match)	
-  };	
-  const handleMatchDetailDialogClose = () => {	
-    setDialogOpen(false);	
+  const openMatch = (match: Match) => {
+    history.push(`/match/${match.leagueID}/${match.eventID}`);
   };
 
   // Only the leagues currently on screen are polled, so viewing a single
@@ -194,7 +189,7 @@ function Live() {
                         }
                         {group.matches.map((match: any) => {
                       return (
-                        <tr key={match.matchID} onClick={() => handleTableRowClick(match)}>
+                        <tr key={match.matchID} onClick={() => openMatch(match)}>
                           <td className="liveScore__homeTeam">
                             <div className="home__name__logo">
                               <span className="homeTeam">{match.homeTeam}</span>
@@ -233,11 +228,6 @@ function Live() {
           })}
         </div>
       </div>
-      {isError === false && 	
-        <div>	
-          <MatchDetail dialogOpen={dialogOpen} dialogState={dialogState} handleMatchDetailDialogClose={handleMatchDetailDialogClose}/>	
-        </div>	
-      }
     </div>
   );
 }

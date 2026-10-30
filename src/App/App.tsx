@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import Header from "../Header/Header";
+import MatchPage from "../Match/MatchPage";
 import Score from "../Score/Score";
 import { createQueryClient } from "../api/queryClient";
 import "./App.scss";
@@ -19,6 +20,11 @@ function App() {
           <Route path="/home" render={() => (
             <div className="App">
               <Header />
+          </div>
+          )} />
+          <Route path="/match/:leagueID/:eventID" render={() => (
+            <div className="App">
+              <MatchPage />
           </div>
           )} />
           {/* Score renders its own header, because the live badge in the bar

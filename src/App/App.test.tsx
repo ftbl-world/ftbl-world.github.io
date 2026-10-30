@@ -42,6 +42,10 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2030-05-18T09:00:00Z'));
   localStorage.setItem('ftbl-selected-league', 'eng.1');
+  // Opening a match navigates, and jsdom keeps one location for the whole
+  // file, so without this every test after the first click starts on the match
+  // page instead of the board.
+  window.history.pushState({}, '', '/');
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok(scoreboard)));
 });
 
@@ -129,7 +133,7 @@ it('keeps the rest of the board when one league fails', async () => {
   expect(screen.queryByText('Cannot fetch the data right now.')).not.toBeInTheDocument();
 });
 
-it('keeps match statistics on screen when a refresh fails', async () => {
+it('opens the match page and keeps its statistics through a failed refresh', async () => {
   const liveMatch = {
     events: [
       {
@@ -160,10 +164,30 @@ it('keeps match statistics on screen when a refresh fails', async () => {
             { name: 'totalPasses', displayValue: '401' },
           ],
         },
-        { homeAway: 'away', team: { id: '2' }, statistics: [] },
+        {
+          homeAway: 'away',
+          team: { id: '2' },
+          statistics: [
+            { name: 'possessionPct', displayValue: '42' },
+            { name: 'totalShots', displayValue: '6' },
+            { name: 'shotsOnTarget', displayValue: '1' },
+            { name: 'totalPasses', displayValue: '250' },
+          ],
+        },
       ],
     },
-    header: { competitions: [{ details: [] }] },
+    header: {
+      league: { name: 'Premier League' },
+      competitions: [
+        {
+          status: { type: { state: 'in', detail: "34'" } },
+          competitors: [
+            { homeAway: 'home', score: '1', team: { id: '1', displayName: 'Chelsea', abbreviation: 'CHE' } },
+            { homeAway: 'away', score: '0', team: { id: '2', displayName: 'Arsenal', abbreviation: 'ARS' } },
+          ],
+        },
+      ],
+    },
   };
 
   let summaryFails = false;
@@ -182,6 +206,9 @@ it('keeps match statistics on screen when a refresh fails', async () => {
   render(<App />);
 
   fireEvent.click((await screen.findByText('Chelsea')).closest('tr')!);
+
+  // The row is a link to a page of its own now, not a dialog over the board.
+  expect(window.location.pathname).toBe('/match/eng.1/77');
   expect(await screen.findByText('58%', undefined, SETTLE)).toBeInTheDocument();
 
   // The live poll now runs into a failing endpoint.

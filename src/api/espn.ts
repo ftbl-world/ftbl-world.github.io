@@ -1,5 +1,3 @@
-import { GoalScorer, MatchDetails, TeamDetails } from '../types';
-
 const BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
 export interface League {
@@ -128,63 +126,5 @@ export const fetchCompetition = async (
     leagueID: league.leagueID,
     name: league.name,
     matches: events.map((event) => toMatch(league.leagueID, event)),
-  };
-};
-
-const statistic = (team: any, name: string): string => {
-  const match = (team?.statistics ?? []).find((s: any) => s.name === name);
-  return match?.displayValue ?? '';
-};
-
-const difference = (total: string, part: string): string => {
-  const result = parseInt(total, 10) - parseInt(part, 10);
-  return isNaN(result) ? '' : result.toString();
-};
-
-const toTeamDetails = (team: any, goals: GoalScorer[]): TeamDetails => {
-  const totalShots = statistic(team, 'totalShots');
-  const onTarget = statistic(team, 'shotsOnTarget');
-  const possession = statistic(team, 'possessionPct');
-
-  return {
-    goals,
-    possession: possession && `${possession}%`,
-    shots: {
-      onTarget,
-      offTarget: difference(totalShots, onTarget),
-    },
-    totalPasses: statistic(team, 'totalPasses'),
-  };
-};
-
-// ESPN credits a goal to the team that benefits from it, so own goals are
-// already grouped under the correct side.
-const toGoalScorers = (details: any[], teamID: string): GoalScorer[] =>
-  details
-    .filter((detail) => detail.scoringPlay && detail.team?.id === teamID)
-    .map((detail) => ({
-      scorer: detail.participants?.[0]?.athlete?.shortName ?? '',
-      time: (detail.clock?.displayValue ?? '').replace("'", ''),
-      isPenalty: Boolean(detail.penaltyKick),
-    }));
-
-export const fetchMatchDetails = async (
-  leagueID: string,
-  eventID: string
-): Promise<MatchDetails> => {
-  const response = await fetch(`${BASE_URL}/${leagueID}/summary?event=${eventID}`);
-  if (!response.ok) {
-    throw new Error(`Could not load match details (HTTP ${response.status})`);
-  }
-  const body = await response.json();
-
-  const teams: any[] = body.boxscore?.teams ?? [];
-  const home = teams.find((t) => t.homeAway === 'home') ?? {};
-  const away = teams.find((t) => t.homeAway === 'away') ?? {};
-  const details: any[] = body.header?.competitions?.[0]?.details ?? [];
-
-  return {
-    home: toTeamDetails(home, toGoalScorers(details, home.team?.id)),
-    away: toTeamDetails(away, toGoalScorers(details, away.team?.id)),
   };
 };
