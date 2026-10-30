@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchCompetition, fetchMatchDetails } from './espn';
+import { fetchCompetition } from './espn';
 
 const PREMIER_LEAGUE = { leagueID: 'eng.1', name: 'Premier League' };
 
@@ -145,74 +145,5 @@ describe('failures', () => {
     );
 
     await expect(fetchCompetition(PREMIER_LEAGUE)).rejects.toThrow('HTTP 403');
-  });
-});
-
-describe('match details', () => {
-  it('derives shots off target and attributes goals to the right side', async () => {
-    respondWith({
-      boxscore: {
-        teams: [
-          {
-            homeAway: 'home',
-            team: { id: '359' },
-            statistics: [
-              { name: 'possessionPct', displayValue: '61' },
-              { name: 'totalShots', displayValue: '14' },
-              { name: 'shotsOnTarget', displayValue: '6' },
-              { name: 'totalPasses', displayValue: '520' },
-            ],
-          },
-          { homeAway: 'away', team: { id: '363' }, statistics: [] },
-        ],
-      },
-      header: {
-        competitions: [
-          {
-            details: [
-              {
-                scoringPlay: true,
-                team: { id: '359' },
-                clock: { displayValue: "23'" },
-                participants: [{ athlete: { shortName: 'B. Saka' } }],
-              },
-              {
-                scoringPlay: false,
-                team: { id: '359' },
-                clock: { displayValue: "40'" },
-                participants: [{ athlete: { shortName: 'T. Partey' } }],
-              },
-              {
-                scoringPlay: true,
-                team: { id: '363' },
-                clock: { displayValue: "77'" },
-                penaltyKick: true,
-                participants: [{ athlete: { shortName: 'C. Palmer' } }],
-              },
-            ],
-          },
-        ],
-      },
-    });
-
-    const details = await fetchMatchDetails('eng.1', '740001');
-
-    expect(details.home.possession).toBe('61%');
-    expect(details.home.shots).toEqual({ onTarget: '6', offTarget: '8' });
-    expect(details.home.goals).toEqual([
-      { scorer: 'B. Saka', time: '23', isPenalty: false },
-    ]);
-    expect(details.away.goals).toEqual([
-      { scorer: 'C. Palmer', time: '77', isPenalty: true },
-    ]);
-  });
-
-  it('leaves statistics blank when the match has not started', async () => {
-    respondWith({ boxscore: { teams: [] } });
-
-    const details = await fetchMatchDetails('eng.1', '740001');
-
-    expect(details.home.possession).toBe('');
-    expect(details.home.shots.offTarget).toBe('');
   });
 });

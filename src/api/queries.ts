@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { MatchDetails } from '../types';
-import { Competition, League, fetchCompetition, fetchMatchDetails } from './espn';
+import { Competition, League, fetchCompetition } from './espn';
+import { MatchSummary, fetchMatchSummary } from './match';
 
 // A fixture under way is worth polling hard; one that finished hours ago is
 // not. Tiering these is what stops a forgotten tab pulling megabytes a minute.
@@ -129,16 +129,18 @@ export const useCompetitions = (
       })),
   });
 
-export const useMatchDetails = (
-  leagueID: string | undefined,
-  eventID: string | undefined,
-  phase: string | undefined,
-  enabled: boolean,
-) =>
-  useQuery<MatchDetails>({
-    queryKey: ['matchDetails', leagueID, eventID],
-    queryFn: () => fetchMatchDetails(leagueID!, eventID!),
-    enabled: enabled && Boolean(leagueID && eventID),
-    // Statistics only move while the match does.
-    refetchInterval: phase === 'in' ? POLL_LIVE : false,
+/**
+ * Everything the match page shows arrives in one request. It is 36 KB over the
+ * wire but around 400 KB to parse, so a finished match is fetched once and left
+ * alone.
+ */
+export const useMatchSummary = (leagueID: string, eventID: string) =>
+  useQuery<MatchSummary>({
+    queryKey: ['matchSummary', leagueID, eventID],
+    queryFn: () => fetchMatchSummary(leagueID, eventID),
+    enabled: Boolean(leagueID && eventID),
+    // Read from the response rather than the caller, so a match that kicks off
+    // while the page is open starts polling without anything else happening.
+    refetchInterval: ({ state }) =>
+      state.data?.header.phase === 'in' ? POLL_LIVE : false,
   });

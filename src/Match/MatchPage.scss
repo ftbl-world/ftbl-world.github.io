@@ -1,0 +1,698 @@
+$accent: #26a380;
+$ink: #222831;
+$muted: #5a636c;
+$line: rgba(0, 0, 0, 0.1);
+$card: #ffffff;
+$live: #c62828;
+
+.matchPage {
+  min-height: 100vh;
+
+  &__body {
+    display: flex;
+    justify-content: center;
+    background-color: #eeeeee;
+    min-height: 100vh;
+  }
+
+  // Shares the column the board and the header use, so moving between the two
+  // pages does not shift the content sideways.
+  &__content {
+    box-sizing: border-box;
+    width: var(--content-width);
+    padding: 0 var(--content-gutter);
+    min-width: 0;
+  }
+
+  &__back {
+    display: inline-block;
+    margin: 1rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: $muted;
+    text-decoration: none;
+
+    &:hover {
+      color: $ink;
+      text-decoration: underline;
+    }
+  }
+
+  &__message {
+    margin: 3rem 0;
+    text-align: center;
+    color: $muted;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 1rem;
+    // More tabs than fit is the normal case on a phone, and a visible bar over
+    // a row of labels is noise.
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__tab {
+    flex: 0 0 auto;
+    padding: 0.6rem 0.9rem;
+    font-family: 'Poppins';
+    font-size: 0.85rem;
+    color: $muted;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $ink;
+    }
+
+    &--active {
+      color: $ink;
+      font-weight: 600;
+      border-bottom-color: $accent;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: -2px;
+    }
+  }
+
+  &__panel {
+    margin: 1rem 0 3rem;
+    padding: 1rem;
+    background-color: $card;
+    border-radius: 4px;
+  }
+}
+
+.scoreline {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background-color: $card;
+  border-radius: 4px;
+
+  &__meta {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: $muted;
+  }
+
+  &__venue::before {
+    content: '· ';
+  }
+
+  &__teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  &__team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+
+    &__name {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+  }
+
+  &__result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &__score {
+    font-size: 2rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  &__dash {
+    color: $muted;
+    font-weight: 400;
+  }
+
+  &__kickoff {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  &__shootout {
+    font-size: 0.85rem;
+    color: $muted;
+  }
+
+  &__status {
+    font-size: 0.75rem;
+    color: $muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    &--live {
+      color: $live;
+      font-weight: 600;
+    }
+  }
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__legend,
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 3.5rem 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+  }
+
+  &__legend {
+    padding-bottom: 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $muted;
+    border-bottom: 1px solid $line;
+
+    span:last-child {
+      grid-column: 3;
+      text-align: right;
+    }
+  }
+
+  &__row {
+    border-bottom: 1px solid $line;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__side {
+    display: flex;
+    min-width: 0;
+  }
+
+  // Each side's events sit against the clock in the middle rather than against
+  // the outer edges, so a glance down the centre reads as the match unfolding.
+  &__side--home {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  &__side--away {
+    grid-column: 3;
+    justify-content: flex-start;
+  }
+
+  &__entry {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  &__side--home &__entry {
+    flex-direction: row-reverse;
+  }
+
+  // A whistle belongs to neither team, so it runs across the full width under
+  // the clock instead of picking a side.
+  &__neutral {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    padding-top: 0.2rem;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: $muted;
+    text-align: center;
+  }
+
+  &__clock {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $muted;
+    text-align: center;
+  }
+
+  &__icon {
+    flex: 0 0 auto;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  &__card {
+    display: inline-block;
+    width: 9px;
+    height: 13px;
+    border-radius: 1px;
+    vertical-align: middle;
+  }
+
+  &__icon--yellow &__card {
+    background-color: #f2c200;
+  }
+
+  &__icon--red &__card {
+    background-color: #d32f2f;
+  }
+
+  &__icon--period {
+    opacity: 0.4;
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 0.85rem;
+  }
+
+  &__note {
+    font-size: 0.7rem;
+    color: $muted;
+  }
+}
+
+.commentary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid $line;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__clock {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $muted;
+  }
+
+  &__text {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+}
+
+.stats {
+  &__legend {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $muted;
+
+    // A swatch each, so which colour belongs to which team never has to be
+    // worked out from the numbers.
+    &__home::before,
+    &__away::after {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      vertical-align: baseline;
+    }
+
+    &__home::before {
+      margin-right: 0.4rem;
+      background-color: $accent;
+    }
+
+    &__away::after {
+      margin-left: 0.4rem;
+      background-color: $ink;
+    }
+  }
+
+  &__row {
+    margin-bottom: 0.9rem;
+  }
+
+  &__values {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.25rem;
+  }
+
+  &__value {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    color: $muted;
+  }
+
+  // The track is the away team's share rather than empty space, so the bar is
+  // always fully coloured and a 0-2 split reads as the away side holding all
+  // of it instead of as missing data.
+  &__bar {
+    height: 6px;
+    background-color: $ink;
+    border-radius: 3px;
+    overflow: hidden;
+
+    &--empty {
+      background-color: #d8dde2;
+    }
+  }
+
+  &__bar__home {
+    height: 100%;
+    background-color: $accent;
+  }
+}
+
+.leagueTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th {
+    padding: 0.4rem 0.3rem;
+    color: $muted;
+    font-weight: 500;
+    text-align: right;
+    border-bottom: 1px solid $line;
+  }
+
+  td {
+    padding: 0.45rem 0.3rem;
+    text-align: right;
+    border-bottom: 1px solid $line;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    text-align: left;
+  }
+
+  &__rank {
+    width: 1.5rem;
+    color: $muted;
+  }
+
+  &__team {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__points {
+    font-weight: 700;
+  }
+
+  &__row--playing {
+    background-color: rgba(38, 163, 128, 0.12);
+  }
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  &__name {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  &__results {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid $line;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__badge {
+    grid-row: span 2;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ffffff;
+    border-radius: 3px;
+    background-color: $muted;
+
+    &--w {
+      background-color: $accent;
+    }
+
+    &--d {
+      background-color: #9aa3ab;
+    }
+
+    &--l {
+      background-color: #d32f2f;
+    }
+  }
+
+  &__opponent {
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__venue {
+    margin-right: 0.3rem;
+    font-size: 0.7rem;
+    color: $muted;
+  }
+
+  &__score {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  &__meta {
+    grid-column: 2 / span 2;
+    font-size: 0.7rem;
+    color: $muted;
+  }
+}
+
+.lineups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.lineup {
+  min-width: 0;
+
+  &__name {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  &__formation {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $muted;
+  }
+
+  &__bench {
+    margin-top: 1rem;
+
+    &__title {
+      margin: 0 0 0.4rem;
+      font-size: 0.75rem;
+      color: $muted;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0;
+      font-size: 0.8rem;
+      color: $muted;
+    }
+
+    // A substitute who actually came on is worth distinguishing from the eight
+    // who sat there all afternoon.
+    &--used {
+      color: $ink;
+      font-weight: 500;
+    }
+
+    &__jersey {
+      display: inline-block;
+      min-width: 1.4rem;
+      font-size: 0.7rem;
+      text-align: center;
+      color: $muted;
+    }
+
+    &__position {
+      margin-left: auto;
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+  }
+}
+
+.pitch {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem;
+  background-color: #2f7d5f;
+  // The halfway line and centre circle, drawn rather than imaged so the pitch
+  // costs nothing to load.
+  background-image: linear-gradient(
+    rgba(255, 255, 255, 0.25) 1px,
+    transparent 1px
+  );
+  background-size: 100% 50%;
+  border-radius: 4px;
+
+  &__row {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  &__player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  &__shirt {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: $ink;
+    background-color: #ffffff;
+    border-radius: 50%;
+  }
+
+  &__subbed {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: #d32f2f;
+    border: 1px solid #ffffff;
+    border-radius: 50%;
+  }
+
+  &__name {
+    max-width: 100%;
+    font-size: 0.62rem;
+    color: #ffffff;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media all and (max-width: 650px) {
+  .matchPage__panel {
+    padding: 0.75rem;
+  }
+
+  // Two columns of eleven names is unreadable on a phone, so the teams stack.
+  .lineups,
+  .form {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreline__score {
+    font-size: 1.6rem;
+  }
+
+  .scoreline__team__name {
+    font-size: 0.8rem;
+  }
+
+  .leagueTable {
+    font-size: 0.75rem;
+  }
+}
