@@ -6,19 +6,25 @@ const kickoffTime = (iso: string): string => {
   return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 };
 
-const kickoffDay = (iso: string): string => {
+// The year matters here in a way it does not on the board: a match page is
+// reachable from a link or an old season, with nothing around it to say when
+// it was played.
+const kickoffDate = (iso: string): string => {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString(undefined, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    year: 'numeric',
   });
 };
 
 function Scoreline({ header }: { header: MatchHeader }) {
   const { home, away, phase } = header;
   const hasShootout = Boolean(home.shootoutScore && away.shootoutScore);
+  const date = kickoffDate(header.kickoff);
+  const time = kickoffTime(header.kickoff);
 
   return (
     <div className="scoreline">
@@ -26,6 +32,14 @@ function Scoreline({ header }: { header: MatchHeader }) {
         <span>{header.leagueName}</span>
         {header.venue && <span className="scoreline__venue">{header.venue}</span>}
       </div>
+
+      {date && (
+        <time className="scoreline__date" dateTime={header.kickoff}>
+          {/* A match yet to start already shows its kickoff time below, so
+              repeating it here would say the same thing twice. */}
+          {phase === 'pre' ? date : [date, time].filter(Boolean).join(' · ')}
+        </time>
+      )}
 
       <div className="scoreline__teams">
         <div className="scoreline__team">
@@ -48,11 +62,13 @@ function Scoreline({ header }: { header: MatchHeader }) {
               ({home.shootoutScore} – {away.shootoutScore})
             </span>
           )}
-          <span
-            className={`scoreline__status${phase === 'in' ? ' scoreline__status--live' : ''}`}
-          >
-            {phase === 'pre' ? kickoffDay(header.kickoff) : header.status}
-          </span>
+          {phase !== 'pre' && (
+            <span
+              className={`scoreline__status${phase === 'in' ? ' scoreline__status--live' : ''}`}
+            >
+              {header.status}
+            </span>
+          )}
         </div>
 
         <div className="scoreline__team">
