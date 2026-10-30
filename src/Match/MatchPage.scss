@@ -111,6 +111,14 @@ $live: #c62828;
     content: '· ';
   }
 
+  &__date {
+    display: block;
+    margin-top: 0.2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: $muted;
+  }
+
   &__teams {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
