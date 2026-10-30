@@ -104,8 +104,20 @@ const toMatch = (leagueID: string, event: any): Match => {
   };
 };
 
-export const fetchCompetition = async (league: League): Promise<Competition> => {
-  const response = await fetch(`${BASE_URL}/${league.leagueID}/scoreboard`);
+/** ESPN expects a bare YYYYMMDD, which is also how queries are keyed. */
+export const toDateParam = (date: Date): string =>
+  [
+    date.getFullYear(),
+    `${date.getMonth() + 1}`.padStart(2, '0'),
+    `${date.getDate()}`.padStart(2, '0'),
+  ].join('');
+
+export const fetchCompetition = async (
+  league: League,
+  date?: string
+): Promise<Competition> => {
+  const query = date ? `?dates=${date}` : '';
+  const response = await fetch(`${BASE_URL}/${league.leagueID}/scoreboard${query}`);
   if (!response.ok) {
     throw new Error(`Could not load ${league.name} (HTTP ${response.status})`);
   }
